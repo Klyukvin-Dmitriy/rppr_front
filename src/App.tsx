@@ -11,11 +11,19 @@ import { BookingDetails } from './pages/BookingDetails'
 import { useAuth } from './hooks/useAuth'
 
 // Компонент для защиты маршрутов (inline)
-function ProtectedRoute({ children }: { children: React.ReactNode }) {
-  const { isAuthenticated } = useAuth()
+function ProtectedRoute({ children, requireManager = false }: { 
+  children: React.ReactNode
+  requireManager?: boolean 
+}) {
+  const { isAuthenticated, user } = useAuth()
   
   if (!isAuthenticated) {
     return <Navigate to="/login" replace />
+  }
+  
+  // ✅ ДОБАВЛЕНО: Проверка роли менеджера
+  if (requireManager && !user?.is_manager) {
+    return <Navigate to="/" replace />
   }
   
   return <>{children}</>
@@ -30,17 +38,17 @@ function App() {
           
           {/* BOO-35: Интерфейс управляющего (ЗАЩИЩЕНО) */}
           <Route path="/admin/bookings" element={
-            <ProtectedRoute>
+            <ProtectedRoute requireManager>
               <BookingsTable />
             </ProtectedRoute>
           } />
           <Route path="/admin/add-hotel" element={
-            <ProtectedRoute>
+            <ProtectedRoute requireManager>
               <AddHotelForm />
             </ProtectedRoute>
           } />
           <Route path="/admin/hotels/:hotelId/add-room" element={
-            <ProtectedRoute>
+            <ProtectedRoute requireManager>
               <AddRoomForm />
             </ProtectedRoute>
           } />

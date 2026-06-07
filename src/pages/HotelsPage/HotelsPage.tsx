@@ -38,7 +38,7 @@ const initialFilters: Filters = {
 const PAGE_SIZE = 10;
 
 const HotelsPage = () => {
-  const [hotels, setHotels] = useState<Hotel[]>([]);
+  const [hotels, setHotels] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [filterError, setFilterError] = useState<string | null>(null);
   const [filters, setFilters] = useState<Filters>(initialFilters);
@@ -64,7 +64,7 @@ const HotelsPage = () => {
 
       const data: HotelsApiResponse = await getHotels(params);
       
-      setHotels(data.hotels);
+      setHotels(data.hotels || []);
       setTotalPages(Math.ceil(data.total / PAGE_SIZE));
     } catch (err: unknown) {
       // Если бэкенд недоступен — просто показываем пустой список
@@ -213,9 +213,7 @@ const HotelsPage = () => {
         </>
       )}
 
-      {!loading && hotels.length === 0 && (
-        <p>По вашему запросу отелей не найдено.</p>
-      )}
+      {(!hotels || hotels.length === 0) && <p>По вашему запросу отелей не найдено.</p>}
     </div>
   );
 };

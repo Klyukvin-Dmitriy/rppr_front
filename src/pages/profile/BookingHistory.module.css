@@ -166,3 +166,8 @@
 .modalActions .cancelButton:hover {
   background: #5a6268;
 }
+/* Модальное окно ошибки */
+.modal h3 {
+  margin-top: 0;
+  color: #F44336;
+}
