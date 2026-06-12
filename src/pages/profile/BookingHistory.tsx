@@ -73,11 +73,65 @@ export const BookingHistory = () => {
     }
   }
 
-  useEffect(() => {
+    useEffect(() => {
     const abortController = new AbortController()
-    fetchBookings(abortController.signal)
-    
+    let isMounted = true
+
+    const init = async () => {
+      setLoading(true)
+      try {
+        const response = await apiClient.get('/bookings/my', { signal: abortController.signal })
+        if (!isMounted) return
+        const { bookings: rawBookings, ...userData } = response.data
+
+        setUserInfo(userData)
+
+        const enrichedBookings = await Promise.all(
+          rawBookings.map(async (booking: Booking) => {
+            try {
+              const roomsResponse = await apiClient.get(`/hotels/${booking.hotel_id}/rooms`, { signal: abortController.signal })
+              const roomDetails = roomsResponse.data.find((r: RoomDetails) => r.id === booking.room_id)
+              return {
+                ...booking,
+                hotel_name: roomDetails?.hotel_name || 'Отель не найден',
+                room_name: roomDetails?.name || 'Комната не найдена',
+                hotel_image_url: roomDetails?.hotel_image_url,
+              }
+            } catch (err) {
+              if (err instanceof AxiosError && err.name === 'CanceledError') {
+                return booking
+              }
+              console.error(`Ошибка загрузки данных для бронирования #${booking.id}:`, err)
+              return {
+                ...booking,
+                hotel_name: 'Не удалось загрузить',
+                room_name: 'Не удалось загрузить',
+              }
+            }
+          })
+        )
+
+        if (!isMounted) return
+        setBookings(enrichedBookings)
+      } catch (err) {
+        if (err instanceof AxiosError && err.name === 'CanceledError') {
+          return
+        }
+        if (!isMounted) return
+        console.error('Ошибка загрузки бронирований:', err)
+        notifyApiError(err, 'Не удалось загрузить бронирования')
+        setBookings([])
+      } finally {
+        if (isMounted) {
+          setLoading(false)
+        }
+      }
+    }
+
+    init()
+
     return () => {
+      isMounted = false
       abortController.abort()
     }
   }, [])
